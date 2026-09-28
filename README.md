@@ -1,4 +1,4 @@
-# Replay-Grounded Reward Signals for Long-Horizon Freeciv Agents
+# Rome Wasn’t Built in One Turn: Replay-Grounded Reward Signals for Long-Horizon Freeciv Agents
 
 Official respository of paper: "Rome Wasn’t Built in One Turn: Replay-Grounded Reward Signals for Long-Horizon Freeciv Agents"
 
