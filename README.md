@@ -22,3 +22,36 @@ Over the full 120-turn game, CivMarshmallow uses a hybrid reward that starts fro
 CivHarness branches saved Freeciv states and exchanges player-visible observations and actions with the agent.
 CivTelescope, a pairwise judge trained on replay-labeled trap pairs, gives a potential Φ(s) through a reference set.
 CivMarshmallow trains the policy in four phases with CivTelescope reward, and with a hybrid reward for full games.
+
+## Installation
+
+CivHarness drives a freeciv-server 3.2.5 build:
+
+```bash
+scripts/install_freeciv_server.sh
+export CIVHARNESS_SERVER=$HOME/opt/freeciv-3.2.5/bin/freeciv-server
+```
+
+With [uv](https://docs.astral.sh/uv/) (`uv.toml` restricts uv to its own managed Python):
+
+```bash
+uv sync                                     # package + dev tools (pytest, ruff)
+uv sync --extra civtelescope --extra games  # optional extras
+```
+
+With pip:
+
+```bash
+pip install -e .                            # package
+pip install -e ".[civtelescope,games]"      # optional extras
+pip install --group dev                     # dev tools (pip >= 25.1)
+```
+
+The `civtelescope` extra installs torch and transformers for CivTelescope training and evaluation; `games` installs the engines for the cross-game trap banks. RL training additionally needs slime: `scripts/slime/setup_slime.sh`.
+
+Format and lint with ruff:
+
+```bash
+ruff format .
+ruff check .
+```

@@ -1,0 +1,3 @@
+# uv project settings: run only on uv-managed Python, never the system one.
+python-preference = "only-managed"
+python-downloads = "automatic"

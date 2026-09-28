@@ -22,6 +22,9 @@ dependencies = [
 civtelescope = ["torch", "transformers"]
 # Cross-game trap banks (chess additionally needs a Stockfish binary in STOCKFISH_BIN).
 games = ["chess", "open_spiel", "catanatron"]
+
+[dependency-groups]
+# Installed by `uv sync`; with pip (>= 25.1): `pip install --group dev`.
 dev = ["pytest", "ruff"]
 
 [tool.setuptools.dynamic]
