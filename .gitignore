@@ -40,3 +40,6 @@ wandb/
 # Local data and results written by the scripts
 data/
 results/
+
+# slime checkout (scripts/slime/setup_slime.sh)
+third_party/

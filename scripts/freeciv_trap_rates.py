@@ -8,9 +8,9 @@ mean turn of a pair over the game length (default: the bank's oracle end
 turn); a progress bin with fewer than 30 pairs has no rate.
 
 Usage:
-  python scripts/freeciv_trap_rates.py \
-      --labels freeciv_civ2civ3=data/banks/civ2civ3_120/labels.jsonl \
-      --labels freeciv_classic=data/banks/classic_120/labels.jsonl \
+  python scripts/freeciv_trap_rates.py \\
+      --labels freeciv_civ2civ3=data/banks/civ2civ3_120/labels.jsonl \\
+      --labels freeciv_classic=data/banks/classic_120/labels.jsonl \\
       --out results/freeciv_trap_rates.json
 """
 

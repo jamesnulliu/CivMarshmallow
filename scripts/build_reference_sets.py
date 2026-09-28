@@ -3,15 +3,15 @@
 
 Usage:
   # 1. bot-played reference games, saved every 5 turns (needs CIVHARNESS_SERVER)
-  python scripts/build_reference_sets.py games --data-root DATA \
+  python scripts/build_reference_sets.py games --data-root DATA \\
       --seeds 8000-8119 --tiles-per-player 200
-  python scripts/build_reference_sets.py games --data-root DATA \
+  python scripts/build_reference_sets.py games --data-root DATA \\
       --seeds 9000-9031 --tiles-per-player 300
   # 2. bot reference positions: 8 games per turn bucket 10, 20, ..., 110
   python scripts/build_reference_sets.py bot --data-root DATA
   # 3. one reference set per phase, from policy episodes harvested by
   #    CivTelescope runs on that phase (value_harvest.jsonl)
-  python scripts/build_reference_sets.py phase --data-root DATA --phase rem80 \
+  python scripts/build_reference_sets.py phase --data-root DATA --phase rem80 \\
       --harvest RUN_A/value_harvest.jsonl --harvest RUN_B/value_harvest.jsonl
 
 Bot positions (``bot``): the held-out games of the pool (seed % 5 == 0; they are

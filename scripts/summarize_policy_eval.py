@@ -3,11 +3,11 @@
 
 Usage:
   # one evaluation run directory (scripts/eval_policy.sh) -> cell json
-  python scripts/summarize_policy_eval.py cell --run-dir RUN --starts test_rem80.jsonl \
+  python scripts/summarize_policy_eval.py cell --run-dir RUN --starts test_rem80.jsonl \\
       --out RUN/cell.json [--require-split test]
 
   # many cells -> aggregate json on stdout (or --out)
-  python scripts/summarize_policy_eval.py summary --cells cells.json \
+  python scripts/summarize_policy_eval.py summary --cells cells.json \\
       [--base-cell base_rem120.json] [--out summary.json]
 
 ``cells.json`` maps ``{reward: {seed: {phase: {"start": cell.json, "end":

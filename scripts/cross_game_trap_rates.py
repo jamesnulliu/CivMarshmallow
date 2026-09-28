@@ -7,10 +7,10 @@ tied, and the same rate per progress bin (mean move of a pair over the game's
 typical length; bins with fewer than 30 pairs have no rate).
 
 Usage:
-  python scripts/cross_game_trap_rates.py \
-      --bank chess=data/games/chess_bank.jsonl \
-      --bank go9=data/games/go9_bank.jsonl \
-      --progress-bank chess=data/games/chess_bank_more.jsonl \
+  python scripts/cross_game_trap_rates.py \\
+      --bank chess=data/games/chess_bank.jsonl \\
+      --bank go9=data/games/go9_bank.jsonl \\
+      --progress-bank chess=data/games/chess_bank_more.jsonl \\
       --lengths data/games/lengths.json --out results/cross_game_trap_rates.json
 
 --progress-bank adds snapshots that enter the progress bins only; the overall

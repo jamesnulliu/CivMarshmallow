@@ -4,8 +4,8 @@
 Usage:
   # per-turn-bucket error and rank correlation of per-decision values against
   # the realized terminal score (value_log.jsonl of rem120 runs)
-  python scripts/offline_diagnostic.py spectrum \
-      --run civtelescope=runs/civtelescope/seed43/rem120 \
+  python scripts/offline_diagnostic.py spectrum \\
+      --run civtelescope=runs/civtelescope/seed43/rem120 \\
       --run scoreboard=runs/scoreboard/seed43/rem120
 
   # explained variance of the terminal score beyond the current score
@@ -13,7 +13,7 @@ Usage:
 
   # training-score slope per iteration (averaged over starts); with two or more
   # runs, also the paired per-start slope difference of every pair
-  python scripts/offline_diagnostic.py slope \
+  python scripts/offline_diagnostic.py slope \\
       --run terminal_civtelescope=RUN_A --run sparse=RUN_B
 
 Each ``--run`` is ``NAME=RUN_DIR``; results are printed as JSON (or written to

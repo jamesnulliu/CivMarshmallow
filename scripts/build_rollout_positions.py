@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
 """Cut rollout position slices for CivTelescope's training data from RL runs.
 
-Each run's per-episode decision log (one JSONL line per episode, in rollout
-order: ``{"decisions": [{"turn", "focal_player", "rendering"}], "score_end"}``)
-is split by training step into named windows; every 5th episode is held out.
+Each run's value_harvest.jsonl (written by the value functions during
+training: one JSONL line per episode, in rollout order, with the episode's
+decision renderings and its final score) is split by training step into named windows; every 5th episode is held out.
 Writes ``<slice>_train.jsonl`` and ``<slice>_eval.jsonl`` under --out-dir, runs
 appended in the order given (the order fixes the pair enumeration downstream).
 A step inside two windows goes to the one listed first.
 
 Usage:
   python scripts/build_rollout_positions.py --out-dir data/rollout \\
-      --run runA=runs/runA/value_log.jsonl --run runB=runs/runB/value_log.jsonl \\
+      --run runA=runs/runA/value_harvest.jsonl --run runB=runs/runB/value_harvest.jsonl \\
       --window runA:rollout_early:8-20 --window runA:rollout_late:35-39 \\
       --window runB:rollout_early:12-24 --window runB:rollout_late:35-39
 """

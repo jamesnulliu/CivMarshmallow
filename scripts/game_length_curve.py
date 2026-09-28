@@ -7,10 +7,10 @@ Inputs are the labels of the game-length banks built by build_freeciv_bank.py
 (presets game_length_60, game_length_70, game_length_80).
 
 Usage:
-  python scripts/game_length_curve.py \
-      --labels 60=data/banks/game_length_60/labels.jsonl \
-      --labels 70=data/banks/game_length_70/labels.jsonl \
-      --labels 80=data/banks/game_length_80/labels.jsonl \
+  python scripts/game_length_curve.py \\
+      --labels 60=data/banks/game_length_60/labels.jsonl \\
+      --labels 70=data/banks/game_length_70/labels.jsonl \\
+      --labels 80=data/banks/game_length_80/labels.jsonl \\
       --out results/game_length_curve.json
 """
 

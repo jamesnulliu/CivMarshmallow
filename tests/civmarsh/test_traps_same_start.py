@@ -7,7 +7,7 @@ import pytest
 
 from civmarsh.traps.same_start import (
     GAP_MIN,
-    load_value_log,
+    load_harvest,
     pair_counts,
     per_turn_rates,
     same_start_bootstrap,
@@ -32,7 +32,7 @@ def write_log(path, eps):
     return path
 
 
-def test_load_value_log_exclusions(tmp_path):
+def test_load_harvest_exclusions(tmp_path):
     log = write_log(
         tmp_path / "log.jsonl",
         [
@@ -47,7 +47,7 @@ def test_load_value_log_exclusions(tmp_path):
             },
         ],
     )
-    eps, n_excluded, n_no_score = load_value_log(log)
+    eps, n_excluded, n_no_score = load_harvest(log)
     assert eps == [("s1", 50, {10: 5, 20: 9})]
     assert (n_excluded, n_no_score) == (3, 1)
 

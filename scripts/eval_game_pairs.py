@@ -7,11 +7,11 @@ Builds the bank's decidable pairs, samples 300 trap and 300 non-trap pairs
 orders, and writes per-model accuracy on trap and non-trap pairs.
 
 Usage:
-  CIVMARSH_API_BASE=https://... CIVMARSH_API_KEY=... \
-  python scripts/eval_game_pairs.py --game chess --bank data/games/chess_bank.jsonl \
+  CIVMARSH_API_BASE=https://... CIVMARSH_API_KEY=... \\
+  python scripts/eval_game_pairs.py --game chess --bank data/games/chess_bank.jsonl \\
       --models MODEL_A,MODEL_B --out results/chess_zero_shot.json --workers 8
   # thinking off for a reasoning model
-  python scripts/eval_game_pairs.py --game othello --bank data/games/othello_bank.jsonl \
+  python scripts/eval_game_pairs.py --game othello --bank data/games/othello_bank.jsonl \\
       --models MODEL --reasoning-effort none --out results/othello_no_thinking.json
 
 Calls are cached per model under --cache-dir (default: next to --out), so a

@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
-"""Same-start trap rate from RL rollout value logs (civmarsh.traps.same_start):
+"""Same-start trap rate from RL rollout value harvests (civmarsh.traps.same_start):
 scoreboard traps between rollouts that share a start, compared at the same
 turn, against cross-start pairs of the same episodes.
 
-Each input is one arm's per-episode value log (JSONL). An input may be
+Each input is one arm's per-episode value harvest (value_harvest.jsonl). An input may be
 NAME=PATH, a file (arm name = its parent directory's name), a directory (every
 *.jsonl beneath it is an arm, named by its subdirectory, or by its file name
 when it sits directly in the directory), or a glob pattern.
 
 Usage:
-  python scripts/same_start_traps.py --inputs runs/*/value_log.jsonl \
+  python scripts/same_start_traps.py --inputs runs/*/value_harvest.jsonl \\
       --out results/same_start_traps.json
-  python scripts/same_start_traps.py --inputs scoreboard_rem40=runs/a/value_log.jsonl \
-      civtelescope_rem40=runs/b/value_log.jsonl --out same_start.json
+  python scripts/same_start_traps.py --inputs scoreboard_rem40=runs/a/value_harvest.jsonl \\
+      civtelescope_rem40=runs/b/value_harvest.jsonl --out same_start.json
 """
 
 from __future__ import annotations

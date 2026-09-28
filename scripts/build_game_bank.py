@@ -3,14 +3,14 @@
 games, snapshots at fixed move numbers, a visible proxy and K-replay oracle.
 
 Usage:
-  STOCKFISH_BIN=/path/to/stockfish python scripts/build_game_bank.py \
+  STOCKFISH_BIN=/path/to/stockfish python scripts/build_game_bank.py \\
       --game chess --out data/games/chess_bank.jsonl --workers 20
   python scripts/build_game_bank.py --game go9 --out data/games/go9_bank.jsonl
 
   # more snapshots of new games, e.g. opening and late-game moves; games whose
   # self-play does not reproduce from the seed (chess, catan) need their own
   # index range
-  python scripts/build_game_bank.py --game chess --game-offset 1000 \
+  python scripts/build_game_bank.py --game chess --game-offset 1000 \\
       --snaps 8,12,80,88,96,104,112,120,128 --out data/games/chess_bank_more.jsonl
 
 Defaults per game (games x replays, seed): chess 80 x 20 (20260909), othello

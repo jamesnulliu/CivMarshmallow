@@ -165,23 +165,24 @@ def rollout_pool(slice_rows):
 
 
 def rollout_positions(
-    value_log,
+    harvest,
     *,
     run: str,
     windows: dict[str, range],
     episodes_per_step: int = 64,
     heldout_every: int = 5,
 ) -> dict[tuple[str, str], list[dict]]:
-    """Split one RL run's per-episode decision log into rollout slices.
+    """Split one RL run's per-episode harvest into rollout slices.
 
-    `value_log` is a JSONL file with one line per episode, in rollout order,
+    `harvest` is the run's ``value_harvest.jsonl``: one line per episode, in
+    rollout order,
     each ``{"decisions": [{"turn", "focal_player", "rendering"}, ...],
     "score_end": <final score>}``; line i belongs to training step
     ``i // episodes_per_step``. `windows` maps a slice name to the training
     steps it covers. Every `heldout_every`-th episode is held out. Returns
     {(slice, "train" | "eval"): position rows}."""
     out: dict[tuple[str, str], list[dict]] = {}
-    for i, row in enumerate(iter_jsonl(value_log)):
+    for i, row in enumerate(iter_jsonl(harvest)):
         step = i // episodes_per_step
         slice_name = next((s for s, w in windows.items() if step in w), None)
         if slice_name is None:

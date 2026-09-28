@@ -3,13 +3,13 @@
 window, and K-branch replay-oracle labels (civmarsh.oracle.bank).
 
 Usage:
-  CIVHARNESS_SERVER=/path/to/freeciv-server \
-  python scripts/build_freeciv_bank.py --preset short_game \
+  CIVHARNESS_SERVER=/path/to/freeciv-server \\
+  python scripts/build_freeciv_bank.py --preset short_game \\
       --work-dir runs/banks/short_game --out-dir data/banks/short_game --workers 16
 
   # a custom bank: every preset field can be overridden
-  python scripts/build_freeciv_bank.py --ruleset classic --endturn 120 \
-      --min-turn 10 --max-turn 65 --seeds 4300-4339 \
+  python scripts/build_freeciv_bank.py --ruleset classic --endturn 120 \\
+      --min-turn 10 --max-turn 65 --seeds 4300-4339 \\
       --work-dir runs/banks/custom --out-dir data/banks/custom
 
 Presets: short_game, classic_transfer, civ2civ3_120, classic_120,

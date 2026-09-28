@@ -1,8 +1,8 @@
 """Same-start trap rate: scoreboard traps between policy rollouts that share a
 start (same map, seed, opponents and start save), compared at the same turn.
 
-Input is the per-episode value log written during RL training (one JSON line
-per episode): ``position_id`` (the start, optionally prefixed ``ep_``),
+Input is the per-episode value harvest written during RL training
+(``value_harvest.jsonl``, one JSON line per episode): ``position_id`` (the start, optionally prefixed ``ep_``),
 ``score_end`` (realized terminal score), ``eliminated`` / ``control_lost``, and
 ``decisions`` of ``{turn, rendering}`` whose rendering carries the visible
 score. Episodes that end in elimination or control loss are excluded.
@@ -44,8 +44,8 @@ N_BOOT = 1000
 Episode = tuple[str, float, dict[int, int]]
 
 
-def load_value_log(path: Path) -> tuple[list[Episode], int, int]:
-    """Episodes of one value log, plus the counts of excluded episodes
+def load_harvest(path: Path) -> tuple[list[Episode], int, int]:
+    """Episodes of one value harvest, plus the counts of excluded episodes
     (eliminated, control lost or unscored) and of episodes without any
     visible score."""
     eps, n_excluded, n_no_score = [], 0, 0
@@ -242,7 +242,7 @@ def same_start_traps(arms: dict[str, Path]) -> dict:
     clusters."""
     per_arm, pooled_eps = {}, []
     for name, path in arms.items():
-        eps, n_excluded, n_no_score = load_value_log(path)
+        eps, n_excluded, n_no_score = load_harvest(path)
         per_arm[name] = {
             "n_episodes": len(eps),
             "n_excluded": n_excluded,
