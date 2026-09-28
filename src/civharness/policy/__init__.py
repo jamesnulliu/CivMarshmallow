@@ -1,0 +1,160 @@
+"""External policy control via server-side Lua.
+
+On 3.2.5, server Lua can issue unit orders — `perform_action()` routes
+through the real action system (found city, fortify, attack, ...),
+`edit.unit_move()` moves with rules applied — and can intervene god-mode
+style (create_building, change_gold, give_bulbs). It can NOT set city
+production or research target (there is no such Lua API).
+
+Those decisions go through the network client instead: civharness.client
+speaks the real protocol, so choosing a city's production/worklist and a
+player's research/tech-goal — genuine decisions, through the normal pipeline —
+is done via civharness.branch.client_branch or civharness.agent.run_agents
+with the order types in civharness.policy.client. Use this Lua path for
+rule-checked unit actions and god-mode interventions; use the client path for
+real construction/research decisions.
+
+Mechanism: Python parses the position, decides orders against concrete
+unit/city IDs, compiles them to a Lua file with a `turn_begin` handler, and
+the branch server loads it via `lua file` before `start`. Every order logs a
+CIVHARNESS marker line with its engine-reported success, so success is
+verifiable, not assumed.
+"""
+
+from dataclasses import dataclass
+from pathlib import Path
+
+
+@dataclass(frozen=True)
+class UnitAction:
+    """A real action through the rules engine (may legally fail)."""
+
+    player_id: int
+    unit_id: int
+    action: str  # gen_action rule name, e.g. "Fortify"
+
+    def lua(self) -> str:
+        return f"""
+    do
+      local u = find.unit(find.player({self.player_id}), {self.unit_id})
+      if u then
+        local ok = u:perform_action(find.action("{self.action}"))
+        log.normal("CIVHARNESS action {self.action} unit={self.unit_id} ok=" .. tostring(ok))
+      else
+        log.normal("CIVHARNESS action {self.action} unit={self.unit_id} MISSING")
+      end
+    end"""
+
+
+@dataclass(frozen=True)
+class MoveUnit:
+    """Rule-respecting move to a tile (edit.unit_move, costs move points)."""
+
+    player_id: int
+    unit_id: int
+    x: int
+    y: int
+    movecost: int = 1
+
+    def lua(self) -> str:
+        # tolua fills no defaults: edit.unit_move requires all 9 args
+        # (moveto, movecost, embark_to, allow_disembark, conquer_city,
+        # conquer_extra, enter_hut, frighten_hut). Plain-move semantics:
+        # no embark target, may disembark, never conquer, may enter huts.
+        return f"""
+    do
+      local u = find.unit(find.player({self.player_id}), {self.unit_id})
+      local t = find.tile({self.x}, {self.y})
+      if u and t then
+        local ok = edit.unit_move(u, t, {self.movecost}, nil, true, false, false, true, false)
+        log.normal("CIVHARNESS move unit={self.unit_id} to={self.x},{self.y} ok=" .. tostring(ok))
+      else
+        log.normal("CIVHARNESS move unit={self.unit_id} MISSING")
+      end
+    end"""
+
+
+@dataclass(frozen=True)
+class TileAction:
+    """A targeted action against a tile (perform_action unit-vs-tile
+    overload), e.g. "Found City" against the unit's own tile."""
+
+    player_id: int
+    unit_id: int
+    action: str  # gen_action rule name, e.g. "Found City"
+    x: int
+    y: int
+
+    def lua(self) -> str:
+        return f"""
+    do
+      local u = find.unit(find.player({self.player_id}), {self.unit_id})
+      local t = find.tile({self.x}, {self.y})
+      if u and t then
+        local ok = u:perform_action(find.action("{self.action}"), t)
+        log.normal("CIVHARNESS action {self.action} unit={self.unit_id} tile={self.x},{self.y} ok=" .. tostring(ok))
+      else
+        log.normal("CIVHARNESS action {self.action} unit={self.unit_id} MISSING")
+      end
+    end"""
+
+
+@dataclass(frozen=True)
+class CreateBuilding:
+    """God-mode intervention: place a building in a city instantly."""
+
+    player_id: int
+    city_id: int
+    building: str  # rule name, e.g. "Barracks"
+
+    def lua(self) -> str:
+        return f"""
+    do
+      local c = find.city(find.player({self.player_id}), {self.city_id})
+      local bt = find.building_type("{self.building}")
+      if c and bt then
+        edit.create_building(c, bt)
+        log.normal("CIVHARNESS build {self.building} city={self.city_id} has=" .. tostring(c:has_building(bt)))
+      else
+        log.normal("CIVHARNESS build {self.building} city={self.city_id} MISSING")
+      end
+    end"""
+
+
+@dataclass(frozen=True)
+class ScriptedPolicy:
+    """orders: {turn: [Order, ...]} — executed at that turn's turn_begin.
+
+    Note: resuming a save made at turn T, the first turn_begin fires for
+    turn T+1; orders at earlier turns never execute."""
+
+    orders: dict
+
+    def to_lua(self) -> str:
+        cases = []
+        for turn, orders in sorted(self.orders.items()):
+            body = "\n".join(o.lua() for o in orders)
+            cases.append(f"  [{turn}] = function(){body}\n  end,")
+        plan = "\n".join(cases)
+        return f"""-- generated by civharness.policy — do not edit
+local civharness_plan = {{
+{plan}
+}}
+
+function civharness_turn_begin(turn, year)
+  local f = civharness_plan[turn]
+  if f then
+    log.normal("CIVHARNESS executing turn " .. tostring(turn))
+    f()
+  end
+end
+
+signal.connect("turn_begin", "civharness_turn_begin")
+log.normal("CIVHARNESS policy loaded")
+"""
+
+    def write(self, path: Path) -> Path:
+        path = Path(path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(self.to_lua())
+        return path

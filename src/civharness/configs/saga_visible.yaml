@@ -1,0 +1,16 @@
+# SAGA-aligned environment with player-visible fog of war.
+# The world (map/cities/units) comes from each client's own PlayerViewCache —
+# what the server actually sent that connection — never from the omniscient
+# autosave. The raw save path and the global terrain grid are withheld.
+name: saga_visible
+observations:
+  techs: known_set
+  cities: true
+  units: true
+  government: true
+  rates: true
+  diplomacy: true
+  players: self
+  terrain: true          # geometry needed for tile ids; grid withheld under fog
+  legal_actions: true
+  visibility: player_visible

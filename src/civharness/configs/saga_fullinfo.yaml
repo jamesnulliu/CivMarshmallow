@@ -1,0 +1,16 @@
+# SAGA-aligned environment with full information: the map, cities and units
+# come from the save-derived full state rather than the player's own fog view.
+# Not comparable to saga_visible; every episode records its visibility mode in
+# the header provenance, so the two cannot be conflated.
+name: saga_fullinfo
+observations:
+  techs: known_set
+  cities: true
+  units: true
+  government: true
+  rates: true
+  diplomacy: true
+  players: all
+  terrain: true
+  legal_actions: true
+  visibility: full_state

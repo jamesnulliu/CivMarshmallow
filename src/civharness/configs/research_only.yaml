@@ -1,0 +1,19 @@
+# Research-only agent: the single lever is the tech path (current target +
+# long-term goal). Everything else is fixed, isolating the effect of research
+# ordering. Observation carries the known-tech set and a minimal city summary.
+name: research-only
+
+actions:
+  - set_research
+  - set_tech_goal
+
+observations:
+  techs: known_set
+  cities: [id, name, size]
+  units: false
+  government: true
+  rates: false
+  diplomacy: false
+  players: self
+  terrain: false
+  legal_actions: false

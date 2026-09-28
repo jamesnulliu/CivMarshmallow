@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+build/
+dist/
+*.egg-info/
+.eggs/
+.venv/
+venv/
+
+# Tooling
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+.ipynb_checkpoints/
+
+# Editors and OS
+.vscode/
+.idea/
+.DS_Store
+
+# Secrets
+.env
+.env.*
+
+# Run outputs (games, saves, checkpoints, logs)
+runs/
+outputs/
+checkpoints/
+wandb/
+*.log
+*.sav
+*.sav.gz
+*.sav.xz
+*.sav.zst
+
+# Local data and results written by the scripts
+data/
+results/

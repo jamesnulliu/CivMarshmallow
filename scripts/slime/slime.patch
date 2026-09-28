@@ -1,0 +1,67 @@
+diff --git a/slime/backends/megatron_utils/data.py b/slime/backends/megatron_utils/data.py
+--- a/slime/backends/megatron_utils/data.py
++++ b/slime/backends/megatron_utils/data.py
+@@ -288,6 +288,9 @@ def log_rollout_data(
+                 "global_batch_sizes",
+                 "num_microbatches",
+                 "micro_batch_indices",
++                # per-sample metadata dicts for custom advantage functions;
++                # not a numeric metric
++                "metadata",
+             ]:
+                 continue
+             # Emit (sum, count) so gather_log_data can do a weighted average across
+diff --git a/slime/ray/rollout.py b/slime/ray/rollout.py
+--- a/slime/ray/rollout.py
++++ b/slime/ray/rollout.py
+@@ -224,7 +224,12 @@ class ServerGroup:
+ 
+         # Compute base_port from the maximum cursor across all nodes that
+         # this group's engines may land on (conservative: just use global max).
+-        base_port = max(port_cursors.values()) if port_cursors else 15000
++        # SLIME_ROLLOUT_BASE_PORT lets concurrent jobs on one node use disjoint ranges.
++        base_port = (
++            max(port_cursors.values())
++            if port_cursors
++            else int(os.environ.get("SLIME_ROLLOUT_BASE_PORT", 15000))
++        )
+         addr_and_ports, port_cursors = _allocate_rollout_engine_addr_and_ports_normal(
+             args=self.args,
+             rollout_engines=rollout_engines,
+@@ -852,6 +857,9 @@ class RolloutManager:
+                 "rollout_routed_experts",
+                 "prompt",
+                 "teacher_log_probs",
++                # per-sample metadata travels with its sample to the training
++                # rank so custom advantage functions can read it
++                "metadata",
+             ]:
+                 if key not in data:
+                     continue
+diff --git a/slime/rollout/sglang_rollout.py b/slime/rollout/sglang_rollout.py
+--- a/slime/rollout/sglang_rollout.py
++++ b/slime/rollout/sglang_rollout.py
+@@ -438,7 +438,13 @@ async def generate_rollout_async(
+                 )
+                 do_print = False
+ 
+-            assert len(group) == args.n_samples_per_prompt
++            # A dynamic filter may shrink a group in place (drop failed samples,
++            # keep the rest). `civ_min_group` is the smallest group size the
++            # filter keeps; unset means the full group is required.
++            min_group = getattr(args, "civ_min_group", None) or args.n_samples_per_prompt
++            assert min_group <= len(group) <= args.n_samples_per_prompt, (
++                f"group size {len(group)} outside [{min_group}, {args.n_samples_per_prompt}]"
++            )
+             all_data.append(group)
+             dynamic_filter_output = call_dynamic_filter(dynamic_filter, args, group)
+             if not dynamic_filter_output.keep:
+@@ -450,7 +456,7 @@ async def generate_rollout_async(
+             # NOTE: here we have not stored all the unused samples back to the data buffer.
+             if len(data) < target_data_size:
+                 data.append(group)
+-                pbar.update(args.n_samples_per_prompt)
++                pbar.update(len(group))
+ 
+     pbar.close()
+     sample = data[-1][0][0] if isinstance(data[-1][0], list) else data[-1][0]

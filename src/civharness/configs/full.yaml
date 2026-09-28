@@ -1,0 +1,21 @@
+# The default environment: every action allowed, a rich observation.
+# Equivalent to EnvSpec.full() / passing no env at all.
+#
+# The terrain grid and the live per-unit legal-action mask are the two
+# expensive fields, so they stay OFF here — turn them on deliberately.
+name: full
+
+# `actions:` omitted -> all known action keys are allowed.
+
+observations:
+  techs: known_set # "count" | "known_set" | false
+  cities: true # true (all fields) | false | [field names]
+  units: true
+  government: true
+  rates: true
+  diplomacy: true
+  players: all # "self" | "all"
+  terrain: false # parse the whole terrain grid (expensive)
+  legal_actions: false # ask the engine per unit (a protocol round-trip each)
+
+# strict: true  # a forbidden action raises; set false to drop it silently

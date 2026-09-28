@@ -1,0 +1,23 @@
+# Military agent: build and command units, with the map visible and the
+# engine's legal-action mask enabled so the agent can ask what each unit may
+# legally do (`legal_actions`) and then execute one by name (`do_action`, e.g.
+# Fortify / Pillage / Build Fortress).
+name: military
+
+actions:
+  - build_unit
+  - build_improvement
+  - unit_orders
+  - do_action
+  - declare_war
+
+observations:
+  techs: known_set
+  cities: [id, name, size, building]
+  units: true
+  government: true
+  rates: false
+  diplomacy: true
+  players: all
+  terrain: true # armies need the map
+  legal_actions: true # per-unit legal-action mask (a round-trip each)

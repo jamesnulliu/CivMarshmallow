@@ -1,0 +1,23 @@
+# Economy-only agent: may shape production and research, but not move armies,
+# change government, or negotiate. Observation is city/economy focused and
+# self-only (opponents hidden), so an economic-planning study is clean.
+name: economy-only
+
+actions:
+  - build_unit
+  - build_improvement
+  - set_worklist
+  - buy
+  - set_research
+  - set_tech_goal
+
+observations:
+  techs: known_set
+  cities: [id, name, size, building, food_stock, shield_stock, specialists]
+  units: [id, x, y, type, activity]
+  government: true
+  rates: true
+  diplomacy: false
+  players: self
+  terrain: false
+  legal_actions: false
