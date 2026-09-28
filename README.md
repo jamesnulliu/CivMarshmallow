@@ -15,6 +15,9 @@ We then train a Freeciv gameplay agent with CivTelescope as a dense reward, and 
 When used in the middle stage of the game where scoreboard traps are common, CivMarshmallow reaches an average training phase gain of 8.94 points, 77% more than the best baseline, the end-of-game reward.
 Over the full 120-turn game, CivMarshmallow uses a hybrid reward that starts from the scoreboard or the end-of-game reward and shifts to CivTelescope as the game advances; this hybrid reward scores highest among the rewards we compare.
 
-![Scoreboard traps](docs/figures/scoreboard_traps.png)
+![Overview of CivHarness, CivTelescope, and CivMarshmallow](docs/figures/overview.png)
 
-**Scoreboard traps.** (a) Trap rate across eight strategy games. (b) Trap rate by game progress; darker red is a higher rate, scaled within each game.
+**Overview of CivHarness, CivTelescope, and CivMarshmallow.**
+CivHarness branches saved Freeciv states and exchanges player-visible observations and actions with the agent.
+CivTelescope, a pairwise judge trained on replay-labeled trap pairs, gives a potential Φ(s) through a reference set.
+CivMarshmallow trains the policy in four phases with CivTelescope reward, and with a hybrid reward for full games.
