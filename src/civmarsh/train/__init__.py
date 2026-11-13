@@ -4,4 +4,5 @@
 - ``rollout``: ``generate``, ``group_reward``, ``drop_failed_episode_groups``
 - ``reward_post``: ``post_process``
 - ``advantage``: ``broadcast_decision_advantages``
+- ``game_rollout``: ``generate`` for the in-process games (``civharness.games``)
 """

@@ -16,6 +16,13 @@
 #   scoreboard_to_civtelescope_to_sparse   two hand-offs, three signals
 #   terminal_civtelescope                  episode reward = CivTelescope value of the
 #                                          final position (static reference set)
+#   value_head                             potential = a regression value head placed on
+#                                          the reference set by fractional rank (static
+#                                          reference set; needs VALUE_HEAD_URLS)
+# Other pairwise models (one trained on preference labels instead of replay
+# labels, or the untrained backbone as a zero-shot scorer) need no reward of
+# their own: run REWARD=civtelescope with CIVTELESCOPE_HF pointing at that model
+# and REFRESH_EVERY=0 for a static reference set.
 # Phases (start turn; every episode ends at turn 120):
 #   rem20 (100)  rem40 (80)  rem80 (40)  rem120 (1)
 #
@@ -45,9 +52,21 @@
 #                      scripts/serve_civtelescope.sh, one data-parallel replica per
 #                      GPU (default 4,5,6,7)
 #   CIVTELESCOPE_PORT  its port (default 30870)
+#   VALUE_HEAD_URLS    value_head: comma-separated /value endpoints of running
+#                      scripts/serve_value_head.py replicas (one per GPU, e.g. on
+#                      the GPUs the CivTelescope server would use); checked
+#                      through /health before the run starts
+#   VALUE_HEAD_BATCH   value_head: positions per request (default 16)
+#   HYBRID_C2, HYBRID_S2  scoreboard_to_civtelescope: optional CivTelescope window,
+#                      a second hand-off back to the scoreboard at turn HYBRID_C2
+#                      (must exceed the first hand-off's 35; HYBRID_S2 default 5);
+#                      unset = no window
+#   LR (1e-6)  GAE_LAMBDA (0.9; potential-based rewards only)
 #   GPUS               GPUs given to Ray and the colocated actor (default 0,...,7)
 #   NUM_ROLLOUT (12)  ROLLOUT_BATCH_SIZE (8)  GLOBAL_BATCH_SIZE (64)  N_SAMPLES (8)
-#   ERR_PENALTY (1.0)  STALL_MAX_FRAC (0.30; 0.40 at rem120)  REFRESH_EVERY (4)
+#   ERR_PENALTY (1.0)  STALL_MAX_FRAC (0.30; 0.40 at rem120)
+#   REFRESH_EVERY      reference-set refresh every N training steps for the
+#                      CivTelescope rewards (default 4; 0 = static reference set)
 #   MIN_GROUP          smallest surviving group kept (default: the whole group)
 #   MAX_TOKENS_PER_GPU (6144)  SAVE_INTERVAL (4)  SGLANG_ATTENTION_BACKEND (fa3)
 #   SGLANG_MEM_FRACTION (0.45 for the potential-based rewards, else 0.5)
@@ -85,10 +104,11 @@ case "$PHASE" in
   *) echo "unknown PHASE '$PHASE'" >&2; exit 2 ;;
 esac
 
-# Which pieces each reward needs: a potential (value function + GAE), the
-# CivTelescope server, the sigmoid hand-off keys.
+# Which pieces each reward needs: a potential (value function + GAE), a
+# reference set, the CivTelescope server, the sigmoid hand-off keys.
 VALUE_FN=""
 USES_TELESCOPE=0
+USES_VALUE_HEAD=0
 case "$REWARD" in
   sparse) ;;
   scoreboard) VALUE_FN=civmarsh.rewards.scoreboard.score_now_value ;;
@@ -99,8 +119,14 @@ case "$REWARD" in
   scoreboard_to_civtelescope_to_sparse)
     VALUE_FN=civmarsh.rewards.hybrid.sparse_hybrid3_value; USES_TELESCOPE=1 ;;
   terminal_civtelescope) USES_TELESCOPE=1 ;;
+  value_head) VALUE_FN=civmarsh.rewards.pointwise.value_head_value; USES_VALUE_HEAD=1 ;;
   *) echo "unknown REWARD '$REWARD'" >&2; exit 2 ;;
 esac
+USES_REFSET=$((USES_TELESCOPE | USES_VALUE_HEAD))
+if [ -n "${HYBRID_C2:-}" ] && [ "$REWARD" != scoreboard_to_civtelescope ]; then
+  echo "HYBRID_C2 applies to REWARD=scoreboard_to_civtelescope only" >&2
+  exit 2
+fi
 if [ "$EVAL" = 1 ] && [ "$REWARD" != sparse ]; then
   echo "EVAL=1 plays episodes only; run it with REWARD=sparse" >&2
   exit 2
@@ -123,6 +149,8 @@ ERR_PENALTY=${ERR_PENALTY:-1.0}
 if [ "$PHASE" = rem120 ]; then STALL_DEFAULT=0.40; else STALL_DEFAULT=0.30; fi
 STALL_MAX_FRAC=${STALL_MAX_FRAC:-$STALL_DEFAULT}
 REFRESH_EVERY=${REFRESH_EVERY:-4}
+LR=${LR:-1e-6}
+GAE_LAMBDA=${GAE_LAMBDA:-0.9}
 MAX_TOKENS_PER_GPU=${MAX_TOKENS_PER_GPU:-6144}
 SAVE_INTERVAL=${SAVE_INTERVAL:-4}
 SGLANG_ATTENTION_BACKEND=${SGLANG_ATTENTION_BACKEND:-fa3}
@@ -135,7 +163,7 @@ RAY_DASHBOARD_PORT=${RAY_DASHBOARD_PORT:-8265}
 CIVTELESCOPE_GPUS=${CIVTELESCOPE_GPUS:-4,5,6,7}
 CIVTELESCOPE_PORT=${CIVTELESCOPE_PORT:-30870}
 
-if [ "$USES_TELESCOPE" = 1 ]; then
+if [ "$USES_REFSET" = 1 ]; then
   REFSET=${REFSET:-$DATA_ROOT/refsets/$PHASE.jsonl}
   if [ "$PHASE" = rem80 ] && [ "$REWARD" != terminal_civtelescope ]; then
     REFSET_IDX=${REFSET_IDX:-[0, 2, 4, 5]}
@@ -145,6 +173,21 @@ if [ "$USES_TELESCOPE" = 1 ]; then
   [ -s "$REFSET" ] || { echo "missing reference set $REFSET" >&2; exit 1; }
 fi
 [ -s "$STARTS" ] || { echo "missing start bank $STARTS" >&2; exit 1; }
+if [ "$USES_VALUE_HEAD" = 1 ]; then
+  VALUE_HEAD_URLS=${VALUE_HEAD_URLS:?set VALUE_HEAD_URLS (scripts/serve_value_head.py replicas)}
+  VALUE_HEAD_BATCH=${VALUE_HEAD_BATCH:-16}
+  python3 - "$VALUE_HEAD_URLS" <<'PY'
+import sys
+import urllib.request
+
+for url in sys.argv[1].split(","):
+    health = url.rsplit("/", 1)[0] + "/health"
+    try:
+        urllib.request.urlopen(health, timeout=10).read()
+    except Exception as exc:
+        sys.exit(f"value head replica not reachable at {health}: {exc}")
+PY
+fi
 [ -e "$INIT_CHECKPOINT" ] || { echo "missing INIT_CHECKPOINT $INIT_CHECKPOINT" >&2; exit 1; }
 
 mkdir -p "$OUT_DIR" "$WORK_DIR"
@@ -245,7 +288,7 @@ YAML
 civ_value_log: "$OUT_DIR/value_log.jsonl"
 civ_terminal_value_fn_path: "civmarsh.rewards.potential.terminal_telescope_value"
 YAML
-  else
+  elif [ "$REFRESH_EVERY" != 0 ]; then
     cp "$REFSET" "$OUT_DIR/refset_pool.jsonl"
     cat >>"$CONFIG" <<YAML
 civ_value_ai_refset: "$OUT_DIR/refset_pool.jsonl"
@@ -274,6 +317,21 @@ case "$REWARD" in
       "civ_hybrid3_s2: 5" >>"$CONFIG"
     ;;
 esac
+if [ -n "${HYBRID_C2:-}" ]; then
+  printf '%s\n' "civ_hybrid_sigmoid_c2: $HYBRID_C2" \
+    "civ_hybrid_sigmoid_s2: ${HYBRID_S2:-5}" >>"$CONFIG"
+fi
+if [ "$USES_VALUE_HEAD" = 1 ]; then
+  # a static copy of the reference set and the replica endpoints (yaml list)
+  cp "$REFSET" "$OUT_DIR/refset_live.jsonl"
+  HEAD_URL_LIST=$(sed 's/[^,][^,]*/"&"/g; s/,/, /g' <<<"$VALUE_HEAD_URLS")
+  cat >>"$CONFIG" <<YAML
+civ_value_refset: "$OUT_DIR/refset_live.jsonl"
+civ_value_refset_idx: $REFSET_IDX
+civ_value_head_urls: [$HEAD_URL_LIST]
+civ_value_head_batch: $VALUE_HEAD_BATCH
+YAML
+fi
 
 # ------------------------------------------------------------ slime args
 # shellcheck source=/dev/null
@@ -344,12 +402,12 @@ GRPO_ARGS=(
   --eps-clip-high 0.28
 )
 if [ -n "$VALUE_FN" ]; then
-  GRPO_ARGS+=(--lambd 0.9)
+  GRPO_ARGS+=(--lambd "$GAE_LAMBDA")
 fi
 
 OPTIMIZER_ARGS=(
   --optimizer adam
-  --lr 1e-6
+  --lr "$LR"
   --lr-decay-style constant
   --weight-decay 0.1
   --adam-beta1 0.9

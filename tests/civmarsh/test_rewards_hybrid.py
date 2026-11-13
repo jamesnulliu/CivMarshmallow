@@ -204,3 +204,55 @@ def test_three_signal_value_refuses_to_run_without_the_second_handoff(refset_fil
             {"score_end": 1.0, "position_id": "p"},
             args,
         )
+
+
+def test_telescope_window_hands_back_to_the_scoreboard(
+    monkeypatch, refset_file, tmp_path
+):
+    calls = []
+    monkeypatch.setattr(
+        client, "prompt_preference", lambda url, p: calls.append(p) or 0.75
+    )
+    decisions = [
+        {"turn": t, "focal": "me", "value_input": '{"score":15,}'} for t in (5, 60, 125)
+    ]
+    log = tmp_path / "value_log.jsonl"
+    args = _args(
+        refset_file,
+        civ_hybrid_sigmoid_c2=100.0,
+        civ_hybrid_sigmoid_s2=5.0,
+        civ_value_log=str(log),
+    )
+    values = hybrid.hybrid_sigmoid_value(decisions, {"score_end": 22.0}, args)
+
+    refs = _references(refset_file)
+    _rank, sb_value = hybrid.scoreboard_component(15.0, refs)
+    phi = potential.winrate_to_score(0.75, refs)
+    w60 = sigmoid(60, C1, S1) * (1 - sigmoid(60, 100.0, 5.0))
+    assert values[0] == pytest.approx(sb_value)  # before the window
+    assert values[1] == pytest.approx((1 - w60) * sb_value + w60 * phi)
+    assert values[2] == pytest.approx(sb_value)  # after it: weight below the skip
+    assert len(calls) == 4  # only turn 60 is scored
+    row = json.loads(log.read_text())
+    assert (row["hybrid_sigmoid_c2"], row["hybrid_sigmoid_s2"]) == (100.0, 5.0)
+
+
+def test_no_window_keeps_the_log_unchanged(monkeypatch, refset_file, tmp_path):
+    monkeypatch.setattr(client, "prompt_preference", lambda url, p: 0.75)
+    log = tmp_path / "value_log.jsonl"
+    hybrid.hybrid_sigmoid_value(
+        [{"turn": 40, "focal": "me", "value_input": '{"score":15,}'}],
+        {"score_end": 1.0},
+        _args(refset_file, civ_value_log=str(log)),
+    )
+    assert "hybrid_sigmoid_c2" not in json.loads(log.read_text())
+
+
+def test_window_must_follow_the_first_handoff(refset_file):
+    args = _args(refset_file, civ_hybrid_sigmoid_c2=30.0)
+    with pytest.raises(ValueError):
+        hybrid.hybrid_sigmoid_value(
+            [{"turn": 40, "focal": "me", "value_input": '{"score":15,}'}],
+            {"score_end": 1.0},
+            args,
+        )

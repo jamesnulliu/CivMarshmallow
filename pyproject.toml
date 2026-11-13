@@ -20,8 +20,10 @@ dependencies = [
 [project.optional-dependencies]
 # CivTelescope training and evaluation, value head.
 civtelescope = ["torch", "transformers"]
-# Cross-game trap banks (chess additionally needs a Stockfish binary in STOCKFISH_BIN).
-games = ["chess", "open_spiel", "catanatron"]
+# Cross-game trap banks (chess additionally needs a Stockfish binary in STOCKFISH_BIN)
+# and the Othello / Catan environments of civharness.games.  catanatron is pinned:
+# a Catan save embeds a pickled engine state, valid only for the version that wrote it.
+games = ["chess", "open_spiel", "catanatron==3.2.1"]
 
 [dependency-groups]
 # Installed by `uv sync`; with pip (>= 25.1): `pip install --group dev`.

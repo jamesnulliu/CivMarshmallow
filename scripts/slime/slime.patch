@@ -11,6 +11,40 @@ diff --git a/slime/backends/megatron_utils/data.py b/slime/backends/megatron_uti
              ]:
                  continue
              # Emit (sum, count) so gather_log_data can do a weighted average across
+diff --git a/slime/backends/megatron_utils/loss.py b/slime/backends/megatron_utils/loss.py
+--- a/slime/backends/megatron_utils/loss.py
++++ b/slime/backends/megatron_utils/loss.py
+@@ -387,6 +387,8 @@ def get_log_probs_and_entropy(
+         tp_group,
+         with_entropy=with_entropy,
+         chunk_size=chunk_size,
++        # With a zero coefficient, entropy is only a metric.
++        entropy_requires_grad=getattr(args, "entropy_coef", 1.0) != 0,
+     )
+     log_prob_full = log_prob_full.squeeze(-1)  # [T, 1] -> [T]
+ 
+diff --git a/slime/backends/megatron_utils/update_weight/hf_weight_iterator_bridge.py b/slime/backends/megatron_utils/update_weight/hf_weight_iterator_bridge.py
+--- a/slime/backends/megatron_utils/update_weight/hf_weight_iterator_bridge.py
++++ b/slime/backends/megatron_utils/update_weight/hf_weight_iterator_bridge.py
+@@ -59,7 +59,17 @@ class HfWeightIteratorBridge(HfWeightIteratorBase):
+             named_weights = self._bridge.export_hf_weights(self.model, cpu=False, conversion_tasks=conversion_tasks)
+ 
+             def _streaming_quantized():
+-                for hf_param_name, weight, megatron_param_name in named_weights:
++                for exported in named_weights:
++                    if len(exported) == 2 and self.model_name == "qwen3config" and self.quantization_config is None:
++                        # This Bridge API omits the source name. Qwen3's two vocab weights
++                        # have fixed HF names, so we can still remove Megatron's padding.
++                        hf_param_name, weight = exported
++                        megatron_param_name = {
++                            "model.embed_tokens.weight": "embedding.word_embeddings.weight",
++                            "lm_head.weight": "output_layer.weight",
++                        }.get(hf_param_name, hf_param_name)
++                    else:
++                        hf_param_name, weight, megatron_param_name = exported
+                     processed_weight = postprocess_hf_param(
+                         args=self.args,
+                         megatron_param_name=megatron_param_name,
 diff --git a/slime/ray/rollout.py b/slime/ray/rollout.py
 --- a/slime/ray/rollout.py
 +++ b/slime/ray/rollout.py
@@ -65,3 +99,39 @@ diff --git a/slime/rollout/sglang_rollout.py b/slime/rollout/sglang_rollout.py
  
      pbar.close()
      sample = data[-1][0][0] if isinstance(data[-1][0], list) else data[-1][0]
+diff --git a/slime/utils/ppo_utils.py b/slime/utils/ppo_utils.py
+--- a/slime/utils/ppo_utils.py
++++ b/slime/utils/ppo_utils.py
+@@ -669,7 +669,9 @@ def chunked_gae(
+     return advantages, returns
+ 
+ 
+-def calculate_log_probs_and_entropy(logits, tokens, tp_group, with_entropy: bool = False, chunk_size: int = -1):
++def calculate_log_probs_and_entropy(
++    logits, tokens, tp_group, with_entropy: bool = False, chunk_size: int = -1, entropy_requires_grad: bool = True
++):
+     logits = logits.contiguous()
+     entropy = None
+     if logits.size(0) != 0:
+@@ -681,8 +683,8 @@ def calculate_log_probs_and_entropy(logits, tokens, tp_group, with_entropy: bool
+             if with_entropy:
+                 entropys = []
+                 for logits_chunk in logits_chunks:
+-                    entropy_input = logits_chunk.clone()
+-                    entropys.append(compute_entropy_from_logits(entropy_input, tp_group))
++                    entropy_input = logits_chunk if entropy_requires_grad else logits_chunk.detach()
++                    entropys.append(compute_entropy_from_logits(entropy_input.clone(), tp_group))
+                 entropy = torch.cat(entropys, dim=0)
+ 
+             log_probs = []
+@@ -692,8 +694,8 @@ def calculate_log_probs_and_entropy(logits, tokens, tp_group, with_entropy: bool
+             log_prob = torch.cat(log_probs, dim=0)
+         else:
+             if with_entropy:
+-                entropy_input = logits.clone()
+-                entropy = compute_entropy_from_logits(entropy_input, tp_group)
++                entropy_input = logits if entropy_requires_grad else logits.detach()
++                entropy = compute_entropy_from_logits(entropy_input.clone(), tp_group)
+ 
+             log_prob = compute_log_probs(logits.clone(), tokens, tp_group)
+     else:

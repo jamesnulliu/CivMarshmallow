@@ -5,6 +5,9 @@ scripts/install_freeciv_server.sh, located via CIVHARNESS_SERVER) with typed
 game configs, process lifecycle, batch execution, a branch API whose readouts
 carry their noise floor, a faithful network client that lets external agents
 control players, and the observation/action layers those agents consume.
+
+Othello and Catan run in-process under the same save/branch/replay contract:
+``civharness.games`` (not imported here).
 """
 
 from civharness.agent import (

@@ -9,6 +9,10 @@ blends are dimensionally consistent.
 
 * ``hybrid_sigmoid_value`` (reward ``scoreboard_to_civtelescope``):
   Phi(t) = (1 - w) * V_scoreboard(t) + w * Phi_telescope(t).
+  With ``civ_hybrid_sigmoid_c2`` set, the CivTelescope weight falls back to
+  the scoreboard after a second hand-off,
+  w(t) = sigmoid((t - c) / s) * (1 - sigmoid((t - c2) / s2)),
+  so CivTelescope carries the middle of the game and the scoreboard both ends.
 * ``sparse_hybrid_sigmoid_value`` (rewards ``sparse_to_civtelescope`` and, with
   ``civ_sparse_hybrid_telescope_first``, ``civtelescope_to_sparse``): returns
   the CivTelescope potential only.  Sparse credit is the position-group
@@ -31,6 +35,11 @@ calls are never skipped: the seam value feeds the backward GAE recursion.
 Config keys (in addition to those of ``potential``):
   civ_hybrid_sigmoid_c, civ_hybrid_sigmoid_s   first hand-off (default 35, 5)
   civ_hybrid_sigmoid_skip_threshold           default 0.01
+  civ_hybrid_sigmoid_c2, civ_hybrid_sigmoid_s2  optional CivTelescope window of
+                                              ``hybrid_sigmoid_value``: second
+                                              hand-off back to the scoreboard
+                                              (c2 > c; s2 default 5); unset = no
+                                              window
   civ_sparse_hybrid_sigmoid                   enable the sparse blend in reward_post
   civ_sparse_hybrid_telescope_first           CivTelescope -> sparse ordering
   civ_hybrid3_sigmoid                         enable the second hand-off in reward_post
@@ -125,6 +134,23 @@ def _first_handoff(args):
     return center, scale, skip
 
 
+def _telescope_window(args, center):
+    """(c2, s2) of the optional window of ``hybrid_sigmoid_value``, or None."""
+    c2 = getattr(args, "civ_hybrid_sigmoid_c2", None)
+    if c2 is None:
+        return None
+    c2 = float(c2)
+    s2 = float(getattr(args, "civ_hybrid_sigmoid_s2", DEFAULT_S1))
+    if not math.isfinite(c2) or not math.isfinite(s2) or s2 <= 0:
+        raise ValueError(f"invalid window hand-off c2={c2!r} s2={s2!r}")
+    if c2 <= float(center):
+        raise ValueError(
+            f"the CivTelescope window would be empty or inverted "
+            f"(c={center!r} >= c2={c2!r})"
+        )
+    return c2, s2
+
+
 def _second_handoff(args):
     c2 = float(getattr(args, "civ_hybrid3_c2", DEFAULT_C2))
     s2 = float(getattr(args, "civ_hybrid3_s2", DEFAULT_S2))
@@ -154,7 +180,14 @@ def hybrid_sigmoid_value(decisions, result, args) -> list[float]:
     center, scale, skip = _first_handoff(args)
     validate_sigmoid(center, scale)
     _validate_skip(skip)
+    window = _telescope_window(args, center)
     weights = [sigmoid(int(d["turn"]), center, scale) for d in decisions]
+    if window is not None:
+        c2, s2 = window
+        weights = [
+            w * (1.0 - sigmoid(int(d["turn"]), c2, s2))
+            for w, d in zip(weights, decisions)
+        ]
     refset, turns, references, scores, winrates, fails = _telescope_parts(
         decisions, args, weights, skip
     )
@@ -186,23 +219,23 @@ def hybrid_sigmoid_value(decisions, result, args) -> list[float]:
             }
         )
 
-    append_value_log(
-        args,
-        {
-            "position_id": result.get("position_id"),
-            "turns": turns,
-            "values": [round(v, 2) for v in values],
-            "components": components,
-            "score_end": result.get("score_end"),
-            "elim_class": result.get("elim_class"),
-            "value_fails": fails,
-            "telescope_skipped_n": sum(c["telescope_skipped"] for c in components),
-            "reward": "scoreboard_to_civtelescope",
-            "hybrid_sigmoid_c": center,
-            "hybrid_sigmoid_s": scale,
-            "hybrid_sigmoid_skip_threshold": skip,
-        },
-    )
+    row = {
+        "position_id": result.get("position_id"),
+        "turns": turns,
+        "values": [round(v, 2) for v in values],
+        "components": components,
+        "score_end": result.get("score_end"),
+        "elim_class": result.get("elim_class"),
+        "value_fails": fails,
+        "telescope_skipped_n": sum(c["telescope_skipped"] for c in components),
+        "reward": "scoreboard_to_civtelescope",
+        "hybrid_sigmoid_c": center,
+        "hybrid_sigmoid_s": scale,
+        "hybrid_sigmoid_skip_threshold": skip,
+    }
+    if window is not None:
+        row["hybrid_sigmoid_c2"], row["hybrid_sigmoid_s2"] = window
+    append_value_log(args, row)
     append_harvest(args, decisions, result, bucket_and_last(decisions, refset))
     return values
 

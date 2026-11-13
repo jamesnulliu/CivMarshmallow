@@ -110,7 +110,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "catanatron", marker = "extra == 'games'" },
+    { name = "catanatron", marker = "extra == 'games'", specifier = "==3.2.1" },
     { name = "chess", marker = "extra == 'games'" },
     { name = "numpy" },
     { name = "open-spiel", marker = "extra == 'games'" },

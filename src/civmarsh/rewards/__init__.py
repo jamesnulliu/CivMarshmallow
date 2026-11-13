@@ -5,5 +5,8 @@
   ``terminal_civtelescope``)
 - ``scoreboard``: current in-game score as the potential (``scoreboard``)
 - ``hybrid``: sigmoid hand-offs between scoreboard, CivTelescope and sparse credit
+- ``pointwise``: a pointwise scorer (regression value head) placed on the
+  reference set (``value_head``)
 - ``reference_set``: periodic rebuild of the reference set from policy episodes
+- ``games``: scoreboard, CivTelescope and mix potentials for Othello and Catan
 """

@@ -94,12 +94,23 @@ def value_config(args):
     )
 
 
-def telescope_winrates(url, decisions, references, indices, *, single_order, workers):
+def telescope_winrates(
+    url,
+    decisions,
+    references,
+    indices,
+    *,
+    single_order,
+    workers,
+    prompt=PAIRWISE_PROMPT,
+):
     """Mean P(decision better than reference) for each decision in ``indices``.
 
     ``references[i]`` is decision i's reference list.  With ``single_order``
     the decision is always position A; otherwise the swapped order is also
     scored and inverted.  A decision whose calls all failed gets 0.5.
+    ``prompt`` is the pairwise template (fields focal_a, rendering_a, focal_b,
+    rendering_b); the default is the Freeciv one.
     Returns ({index: winrate}, number of decisions that fell back to 0.5).
     """
     jobs = []  # (decision index, prompt, inverted)
@@ -109,7 +120,7 @@ def telescope_winrates(url, decisions, references, indices, *, single_order, wor
             jobs.append(
                 (
                     i,
-                    PAIRWISE_PROMPT.format(
+                    prompt.format(
                         focal_a=d["focal"],
                         rendering_a=d["value_input"],
                         focal_b=ref["focal"],
@@ -122,7 +133,7 @@ def telescope_winrates(url, decisions, references, indices, *, single_order, wor
                 jobs.append(
                     (
                         i,
-                        PAIRWISE_PROMPT.format(
+                        prompt.format(
                             focal_a=ref["focal"],
                             rendering_a=ref["rendering"],
                             focal_b=d["focal"],
