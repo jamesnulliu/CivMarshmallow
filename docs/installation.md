@@ -2,13 +2,26 @@
 
 ## Freeciv server
 
-CivHarness drives a headless freeciv-server 3.2.5. The install script downloads the pinned release, checks its
-SHA-256 and builds it into `$HOME/opt/freeciv-3.2.5` (override with `PREFIX=...`):
+CivHarness drives a headless freeciv-server 3.2.5. The install script fetches a pinned commit of
+[jamesnulliu/freeciv](https://github.com/jamesnulliu/freeciv) (branch `civm-3.2.5`), builds it into
+`$HOME/opt/freeciv-3.2.5` (override with `PREFIX=...`) and generates the `civm41` ruleset of
+[environment v4.1](env-v41.md) next to the stock rulesets:
 
 ```bash
 bash scripts/install_freeciv_server.sh
 export CIVHARNESS_SERVER=$HOME/opt/freeciv-3.2.5/bin/freeciv-server
 ```
+
+The branch is the upstream 3.2.5 release (tag `R3_2_5`) plus two commits:
+
+| Commit | Effect |
+|---|---|
+| Hard bots without sight through fog | the Hard level gets the `H_FOG` and `H_MAP` handicaps, so bots decide from what their player can see, like the agent |
+| No conquest end | a conquest victory is announced but does not end the game; every game runs to `endturn`, so final scores stay comparable |
+
+`FREECIV_REF=R3_2_5 bash scripts/install_freeciv_server.sh` builds the unmodified release from the same repository.
+Building from git needs autoconf, automake, libtool and pkg-config in addition to a C toolchain and the zlib,
+libcurl and ICU headers.
 
 Othello and Catan run in-process and need no server.
 
@@ -58,6 +71,7 @@ bash scripts/slime/setup_slime.sh third_party/slime
 | `CIVMARSH_API_BASE`, `CIVMARSH_API_KEY` | zero-shot baselines, preference labels | OpenAI-compatible endpoint (e.g. `https://api.openai.com/v1`) and key |
 | `STOCKFISH_BIN` | chess trap bank | Stockfish binary |
 | `CIVMARSH_RULESET_DIR` | action menu | Freeciv ruleset directory (default: `civ2civ3` of the server install) |
+| `CIVMARSH_RULESET` | environment v4.1 | ruleset of the v4.1 menu and production lists (default `civm41`) |
 | `SLIME_DIR`, `MEGATRON_DIR`, `BASE_MODEL`, `DATA_ROOT`, `CIVTELESCOPE_HF` | RL training and evaluation | patched slime, Megatron-LM, Qwen3-8B weights, start banks and reference sets, merged CivTelescope model; see the header of `scripts/train_policy.sh` |
 | `WANDB_PROJECT`, `WANDB_API_KEY` | RL training | optional; logging is skipped without them |
 
