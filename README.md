@@ -56,7 +56,9 @@ uv run python scripts/cross_game_trap_rates.py --bank othello=results/othello_ba
     --min-bin-pairs 1 --out results/othello_trap_rates.json
 ```
 
-For Freeciv, build the pinned server and run the harness acceptance suite:
+For Freeciv, build the pinned server (freeciv 3.2.5 from
+[jamesnulliu/freeciv](https://github.com/jamesnulliu/freeciv), branch `civm-3.2.5`, plus the `civm41` ruleset) and
+run the harness acceptance suite:
 
 ```bash
 bash scripts/install_freeciv_server.sh
@@ -74,6 +76,7 @@ uv run pytest tests/civharness
 | [CivTelescope](docs/civtelescope.md) | training data, training, evaluation, baselines, ruleset transfer, ablations |
 | [Training](docs/training.md) | rewards, phases, start banks and reference sets, RL training, evaluation, baselines |
 | [Other games](docs/other-games.md) | the full pipeline on Othello and Catan |
+| [Environment v4.1](docs/env-v41.md) | the civm41 ruleset, Hard bots limited to their player's view, the merged turn prompt |
 | [Repository layout](docs/README.md#repository-layout) | where each part of the code lives |
 
 ## Released models

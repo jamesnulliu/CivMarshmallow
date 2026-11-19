@@ -8,6 +8,7 @@
 | [CivTelescope](civtelescope.md) | training data, training, evaluation, baselines, ruleset transfer, ablations |
 | [Training](training.md) | rewards, phases, start banks and reference sets, RL training, evaluation, baselines |
 | [Other games](other-games.md) | the full pipeline on Othello and Catan |
+| [Environment v4.1](env-v41.md) | the civm41 ruleset, Hard bots limited to their player's view, the merged turn prompt |
 
 Every script prints its options with `python scripts/<name>.py --help`; the shell launchers document their
 variables in their headers. The commands in these pages write to `data/`, `results/`, `runs/`, `ckpts/` and
@@ -26,13 +27,15 @@ src/civmarsh/
   civtelescope/          fog rendering, pair building, LoRA training, evaluation, zero-shot baselines,
                          value head, ablations, serving client
   env/                   observation rendering and action menu shown to the policy
+    v41/                 environment v4.1: state, action menu, merged turn prompt, game driver, hex geometry
   rewards/               sparse, scoreboard, CivTelescope, hybrid and value-head potentials, reference sets, GAE;
                          potentials for the other games
   train/                 slime hooks: Freeciv and in-process game rollouts, group reward, advantages
   eval/                  policy evaluation cells and aggregation, offline diagnostics
   baselines/             prompting-scaffold agents
   utils/                 I/O, statistics, API client
-scripts/                 entry points for Freeciv; scripts/slime/ pins and patches slime
+scripts/                 entry points for Freeciv; scripts/slime/ pins and patches slime;
+                         install_freeciv_server.sh builds the server, make_civm41.py the v4.1 ruleset
 scripts/games/           entry points for the Othello and Catan pipeline
 tests/                   harness acceptance suite and unit tests
 docs/                    these pages
