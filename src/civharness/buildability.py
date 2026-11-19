@@ -71,6 +71,14 @@ def _iter_sections(path: Path):
         line = raw.split(";", 1)[0].rstrip() if not raw.lstrip().startswith(";") else ""
         if not line.strip():
             continue
+        # A section header at column 0 always starts a new section, even when a
+        # table or a continuation line is still open: civ2civ3's multi-line Spy
+        # help text would otherwise merge [unit_spy] and [unit_caravan] into
+        # the previous section.
+        if re.match(r"\[(\S+)\]\s*$", raw) and (
+            table is not None or cont_key is not None
+        ):
+            table, key, cont_key = None, None, None
         if table is not None:
             if line.strip() == "}":
                 data[key] = table
@@ -269,15 +277,10 @@ def can_city_build_improvement_now(rs: Ruleset, name: str, ctx: CityContext):
     if genus == "GreatWonder":
         # requires world-level "not built anywhere" knowledge: unknown
         return None
-    if genus == "SmallWonder":
-        if ctx.all_own_city_buildings is None:
-            return None
-        if name in ctx.all_own_city_buildings:
-            return False
-        # a small wonder absent from the visible building lists may still
-        # exist (engine tracks small wonders per player, and rebuilding one
-        # moves it) — legality cannot be proven either way: fail closed
-        return None
+    # SmallWonder: the engine has no player-level "already built" check
+    # (common/improvement.c blocks only great wonders); building one in another
+    # city moves it (a Palace there moves the capital). The same-city case
+    # returned False above, so small wonders take the ordinary requirement check.
     if genus == "Special":
         return None  # coinage-like conversions; never offered
     reqs_ok = _eval_reqs(b["reqs"], ctx)

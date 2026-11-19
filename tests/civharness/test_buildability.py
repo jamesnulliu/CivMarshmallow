@@ -12,7 +12,14 @@ from pathlib import Path
 
 import pytest
 
-from civharness import FunctionAgent, GameConfig, position, run_agents, snapshot_series
+from civharness import (
+    EnvSpec,
+    FunctionAgent,
+    GameConfig,
+    position,
+    run_agents,
+    snapshot_series,
+)
 from civharness.buildability import (
     CityContext,
     Ruleset,
@@ -148,6 +155,30 @@ def test_server_accepts_true_rejects_false(tmp_path):
     pos = position(save)
     focal = next(n for n, p in pos.players.items() if p["cities"])
     me = pos.players[focal]
+    # position() carries no building lists; take them from observe_state, so
+    # the small-wonder verdict is checked against the city's real buildings
+    from civharness.observe import observe_state
+
+    full = EnvSpec.from_dict(
+        {
+            "name": "buildability",
+            "observations": {
+                "cities": True,
+                "players": "all",
+                "visibility": "full_state",
+                "techs": "known_set",
+            },
+        }
+    )
+    _turn, players_full, _terrain = observe_state(save.path, full)
+    by_id = {c["id"]: c for c in players_full[focal]["cities"]}
+    me = {
+        **me,
+        "cities": [
+            {**c, "buildings": by_id.get(c["id"], {}).get("buildings", [])}
+            for c in me["cities"]
+        ],
+    }
     city = me["cities"][0]
 
     rs = _rs()

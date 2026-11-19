@@ -273,6 +273,27 @@ class FreecivClient:
             ),
         )
 
+    def unit_server_side_agent_set(self, unit_id: int, agent: int) -> None:
+        """Hand a unit to a server-side agent (PACKET_UNIT_SERVER_SIDE_AGENT_SET).
+
+        ``agent`` 2 is SSA_AUTOEXPLORE. In 3.2 this is the only path to
+        auto-explore: the server ignores ACTIVITY_EXPLORE sent through
+        PACKET_UNIT_CHANGE_ACTIVITY."""
+        self.fr.send(
+            P.UNIT_SERVER_SIDE_AGENT_SET,
+            self.enc.encode(P.UNIT_SERVER_SIDE_AGENT_SET, [unit_id, agent]),
+        )
+
+    def unit_change_activity(
+        self, unit_id: int, activity: int, target: int = -1
+    ) -> None:
+        """Set a unit activity (PACKET_UNIT_CHANGE_ACTIVITY). Not for explore
+        in 3.2; use ``unit_server_side_agent_set(unit_id, 2)``."""
+        self.fr.send(
+            P.UNIT_CHANGE_ACTIVITY,
+            self.enc.encode(P.UNIT_CHANGE_ACTIVITY, [unit_id, activity, target]),
+        )
+
     # -- control: rates / government / worked tiles -------------------------
     def set_rates(self, tax: int, luxury: int, science: int) -> None:
         """Set tax/luxury/science percents (PACKET_PLAYER_RATES). The engine

@@ -93,7 +93,8 @@ trajs = client_branch(
 
 Orders take rule names and resolve them to ids: `BuildUnit`, `BuildImprovement`, `SetWorklist`, `Buy`, `Sell`,
 `ChangeSpecialist`, `SetResearch`, `SetTechGoal`, `SetRates`, `ChangeGovernment`, `MakeWorker`,
-`MakeSpecialist`, `DeclareWar`, `DoAction`, `UnitOrders`.
+`MakeSpecialist`, `DeclareWar`, `DoAction`, `UnitOrders`, `SetServerSideAgent` (2 = the engine's
+auto-explore; in 3.2 the only way to start it), `ChangeActivity`.
 
 ## Agents
 

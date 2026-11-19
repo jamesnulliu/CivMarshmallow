@@ -177,6 +177,9 @@ def view_units(cache: PlayerViewCache, rules, *, my_player_id: int) -> list[dict
                     "moves": rec["movesleft"],
                     "fuel": rec["fuel"],
                     "homecity": rec["homecity"],
+                    # a unit still executing server-side orders (a multi-turn
+                    # goto) is busy even when its activity is Idle
+                    "has_orders": bool(rec.get("has_orders")),
                 }
             )
         else:

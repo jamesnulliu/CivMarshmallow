@@ -34,11 +34,14 @@ PLAYER_PHASE_DONE = 52
 PLAYER_RESEARCH = 55
 PLAYER_TECH_GOAL = 56
 UNIT_ORDERS = 73
+# cs: hand a unit to a server-side agent (2 = SSA_AUTOEXPLORE)
+UNIT_SERVER_SIDE_AGENT_SET = 74
 UNIT_DO_ACTION = 84  # cs: perform one action by id (delta; single packet executes)
 UNIT_GET_ACTIONS = 87  # cs: ask what an actor may do to a target
 CONN_PING = 88
 CONN_PONG = 89
 UNIT_ACTIONS = 90  # sc: reply — legal-action probabilities (decode)
+UNIT_CHANGE_ACTIVITY = 222  # cs: set a unit activity
 DIPLOMACY_CANCEL_PACT = 105  # declare war / step a treaty down one level
 END_PHASE = 125
 START_PHASE = 126
@@ -81,6 +84,10 @@ _SPECS: dict[int, list[str]] = {
     UNIT_DO_ACTION: ["uint32", "sint32", "sint16", "estring", "uint8"],
     # actor, target_unit, target_tile, target_extra, request_kind
     UNIT_GET_ACTIONS: ["uint32", "uint32", "sint32", "sint8", "uint8"],
+    # unit_id, activity (enum unit_activity), target extra (-1 = none)
+    UNIT_CHANGE_ACTIVITY: ["uint32", "uint8", "sint8"],
+    # unit_id, agent (enum server_side_agent: 0 none, 1 auto worker, 2 auto explore)
+    UNIT_SERVER_SIDE_AGENT_SET: ["uint32", "uint8"],
     DIPLOMACY_CANCEL_PACT: ["uint16", "uint8"],  # other_player_id, clause
     CHAT_MSG_REQ: ["estring"],  # message
 }

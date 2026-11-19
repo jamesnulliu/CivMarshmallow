@@ -138,6 +138,33 @@ class UnitOrders:
 
 
 @dataclass(frozen=True)
+class SetServerSideAgent:
+    """Hand a unit to a server-side agent (PACKET_UNIT_SERVER_SIDE_AGENT_SET):
+    agent 2 = SSA_AUTOEXPLORE (the engine's auto-explore), 0 = manual control."""
+
+    action_key: ClassVar[str] = "server_side_agent"
+    unit_id: int
+    agent: int
+
+    def apply(self, client):
+        client.unit_server_side_agent_set(self.unit_id, self.agent)
+
+
+@dataclass(frozen=True)
+class ChangeActivity:
+    """Set a unit activity (PACKET_UNIT_CHANGE_ACTIVITY). Not for explore in
+    3.2: the server ignores it there; use ``SetServerSideAgent(unit_id, 2)``."""
+
+    action_key: ClassVar[str] = "change_activity"
+    unit_id: int
+    activity: int
+    target: int = -1
+
+    def apply(self, client):
+        client.unit_change_activity(self.unit_id, self.activity, self.target)
+
+
+@dataclass(frozen=True)
 class SetRates:
     """Set tax/luxury/science percents (PACKET_PLAYER_RATES)."""
 
