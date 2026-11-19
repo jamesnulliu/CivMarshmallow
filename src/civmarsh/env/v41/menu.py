@@ -1091,8 +1091,10 @@ def render_turn_v41(state: StateV4, menu: MenuV4) -> str:
     sec = s.sections
     out = [f"TURN {TURN_SCHEMA}", "[OVERVIEW]"] + sec["OVERVIEW"]
     out += ["[RIVALS]"] + sec["RIVALS"]
+    # civm41 has no huts
+    hut = ", H hut" if any(r.kind == "hut" for r in s.refs.values()) else ""
     out += [
-        "[MAP] refs usable as targets: C city, S site, T threat, G enemy city, F explore point, H hut"
+        f"[MAP] refs usable as targets: C city, S site, T threat, G enemy city, F explore point{hut}"
     ] + sec["MAP"]
     out += ["[EVENTS]"] + sec["EVENTS"]
     # cities
@@ -1113,7 +1115,7 @@ def render_turn_v41(state: StateV4, menu: MenuV4) -> str:
         line = (
             f"city:{cid} {s.city_label[cid]} {c.get('name')} {s.coord(c['tile'])} | size {c.get('size')} | "
             f"building {production_text(c)} | "
-            f"food {c.get('food_stock')} | buildings {len(c.get('buildings') or [])} | "
+            f"food stock {c.get('food_stock')} | buildings {len(c.get('buildings') or [])} | "
             f"defenders {mil_on.get(c['tile'], 0)}"
         )
         if thr:

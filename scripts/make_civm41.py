@@ -17,6 +17,9 @@ civm41 is civ2civ3 (freeciv 3.2.5) with these changes, for every player:
   (every civilization met is at war, no treaties), and all players on one continent
   (startpos ALL; check generated maps, the server falls back silently when it
   cannot place everyone).
+* No civil war: [civstyle] civil_war_enabled = FALSE. A civil war adds a new
+  bot player to a four-player game; civil_war_possible() checks this flag first
+  (server/plrhand.c).
 
 The ruleset is generated from the civ2civ3 directory of a server installation and
 written next to it (<prefix>/share/freeciv/civm41), so the server and the
@@ -167,6 +170,9 @@ def update_game(text):
         if k not in done:
             rows2 += f'      "{k}", {v}\n'
     text = text[: m.start(1)] + rows2 + text[m.end(1) :]
+    text, n = re.subn(r"(?m)^(civil_war_enabled\s*=\s*)TRUE\b", r"\1FALSE", text)
+    if n != 1:
+        raise SystemExit("civil_war_enabled not found in [civstyle]")
     text = re.sub(
         r'(?m)^name = _\("Civ2Civ3 ruleset"\)',
         'name = _("CivM41 ruleset (civ2civ3 variant)")',
@@ -228,6 +234,7 @@ def main():
         f"Not buildable (units, NoBuild, {len(units)}): {', '.join(units)}\n\n"
         f"Removed action enablers: {', '.join(enablers)}\n\n"
         f"Server settings: {settings}\n\n"
+        "Civil war disabled ([civstyle] civil_war_enabled = FALSE).\n\n"
     )
     (build / "README.civm41").write_text(
         summary + (src / "README.civ2civ3").read_text()

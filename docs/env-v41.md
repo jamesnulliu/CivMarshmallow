@@ -17,6 +17,7 @@ player:
 | No diplomats, spies, caravans, freight, migrants or ships | `NoBuild` flag on these units and on the Sea and Trireme unit classes |
 | No pillage, embassies or city investigation | the action enablers are removed |
 | No huts, animals, disasters or barbarians | server settings in `game.ruleset` |
+| No civil war | `civil_war_enabled = FALSE` in `[civstyle]` of `game.ruleset` |
 | No treaties | `diplomacy DISABLED`: every civilization met is at war |
 | Constant two-turn anarchy | `revolentype FIXED`, `revolen 2` |
 | One continent | `startpos ALL`; the server silently falls back on some seeds, so start maps are audited (below) |
@@ -49,18 +50,19 @@ player starts on the same continent, no banned item ever appears and no treaty i
 ## Observation and prompt
 
 `StateV4` (`observation.py`) reads a player-visible observation (EnvSpec preset `saga_visible`) and builds
-reference tables: own cities `C`, city sites `S`, threats `T`, enemy cities `G`, explore points `F` and huts `H`.
+reference tables: own cities `C`, city sites `S`, threats `T`, enemy cities `G`, explore points `F` and huts `H`
+(civm41 has no huts; `H` appears only under other rulesets).
 `render_turn_v41` (`menu.py`) merges state and actions into one prompt (schema `civm-turn-v41`); every city and
 every unit appears once, identical busy units share a line. An excerpt:
 
 ```
 [OVERVIEW]
-turn 17/120 | score 6 | gold 64 | government Despotism | researching Horseback Riding | goal Invention | techs 1 | cities 1 | units 2
-[MAP] refs usable as targets: C city, S site, T threat, G enemy city, F explore point, H hut
+turn 17/120 | score 6 | gold 64 | government Despotism | rates tax 40 lux 0 sci 60 | researching Horseback Riding | goal Invention | techs 1 | cities 1 | units 2
+[MAP] refs usable as targets: C city, S site, T threat, G enemy city, F explore point
 SITES (35 valid known sites)
 S1 @18,62 E 3 of C1 | area food 16 shield 15 trade 16 | coastal | foreign city at 7
 [CITIES] each city takes one action: build:<item> or buy. Items every city can build: barracks, temple, warriors, workers. ...
-city:114 C1 Mexihco Tenochtitlan @16,61 | size 2 | building Settlers 40/30 (+5, done next turn) | food 16 | buildings 1 | defenders 0
+city:114 C1 Mexihco Tenochtitlan @16,61 | size 2 | building Settlers 40/30 (+5, done next turn) | food stock 16 | buildings 1 | defenders 0
 [UNITS] each unit takes one action from its list. Every unit also takes goto:<ref> ... or goto:@x,y; settlers also take settle:<S ref> or settle:@x,y ...
 unit:108 Explorer @25,21 SE 25 of C1 | mv 0: disband, explore, move:n,nw,sw,s
 busy or extra units (same rules; no key = keep current orders):

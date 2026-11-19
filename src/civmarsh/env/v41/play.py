@@ -41,9 +41,9 @@ SYSTEM_V4 = (
 # v4.1: entity action format, civm41 rules
 SYSTEM_V41 = (
     "You are playing Freeciv 3.2 as player '{focal}' from turn 1 to turn {endturn}. Rules: civ2civ3 without great "
-    "wonders, ships, diplomats, caravans, Coinage and pillage; there are no treaties, so every civilization you meet "
-    "is at war with you. Each turn you receive the state with the actions of every city and unit (TURN "
-    "civm-turn-v41). Return exactly one JSON object as described under ANSWER. Your goal is the highest score at "
+    "wonders, Coinage, ships, diplomats, spies, caravans, freight, migrants and pillage, and without huts, barbarians "
+    "or civil war; there are no treaties, so every civilization you meet is at war with you. Each turn you receive "
+    "the state with the actions of every city and unit (TURN civm-turn-v41). Return exactly one JSON object as described under ANSWER. Your goal is the highest score at "
     "turn {endturn}: expand, build cities, grow the economy, defend, and research. Return JSON only."
 )
 

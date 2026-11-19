@@ -48,7 +48,7 @@ MOVE_FRAGS = 6  # civ2civ3 terrain.ruleset move_fragments
 
 @dataclass(frozen=True)
 class CapsV4:
-    cities: int = 30
+    cities: int = 40
     idle_units: int = 14
     sites: int = 6
     threats: int = 6
@@ -108,9 +108,13 @@ def build_costs() -> dict[str, int]:
             name = re.search(
                 r'\nname\s*=\s*_\("(?:\?[^:"]*:)?([^"]+)"\)', sec
             )  # "?unit:Workers" -> Workers
+            rule = re.search(r'\nrule_name\s*=\s*"([^"]+)"', sec)
             cost = re.search(r"\nbuild_cost\s*=\s*(\d+)", sec)
             if name and cost:
                 out[name.group(1)] = int(cost.group(1))
+                # the game reports the rule name: Colosseum (shown "Amphitheater"), Harbour ("Harbor")
+                if rule:
+                    out[rule.group(1)] = int(cost.group(1))
     return out
 
 
@@ -125,10 +129,11 @@ def production_text(c) -> str:
     if cost is None:
         return f"{item} {stock} (+{plus})"
     left = max(0, cost - stock)
+    n = -(-left // plus) if plus > 0 else 0
     turns = (
         "done next turn"
         if left == 0
-        else (f"{-(-left // plus)} turns" if plus > 0 else "never at +0")
+        else (f"{n} turn{'s' if n != 1 else ''}" if plus > 0 else "never at +0")
     )
     return f"{item} {stock}/{cost} (+{plus}, {turns})"
 
@@ -321,7 +326,8 @@ class StateV4:
             lines.append(
                 f"P{pid}: "
                 + (f"{rel} | " if rel else "")
-                + f"known cities {len(cs)} | nearest to our cities {near} | "
+                + f"known cities {len(cs)} | "
+                + f"nearest to our cities {'unknown' if near is None else near} | "
                 f"visible units {len(us)} ({mil} military)"
             )
         self.sections["RIVALS"] = lines or ["none seen"]
@@ -339,7 +345,7 @@ class StateV4:
             )
             lines.append(
                 f"{lab} #{c['id']} {c.get('name')} {self.coord(c['tile'])} | size {c.get('size')} | building {production_text(c)} | "
-                f"food {c.get('food_stock')} | "
+                f"food stock {c.get('food_stock')} | "
                 f"buildings {len(c.get('buildings') or [])} | defenders {mil_on.get(c['tile'], 0)} | "
                 f"threat {('enemy unit at ' + str(thr[0][0])) if thr else 'none'}"
             )

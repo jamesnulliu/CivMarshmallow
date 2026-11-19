@@ -192,9 +192,10 @@ def observe_state(save, env: EnvSpec | None = None) -> tuple[int, dict, dict | N
             p["government"] = kv.get("government_name", "").strip('"')
         if want_rates:
             p["rates"] = {
-                "tax": _optional_int(kv.get("tax")),
-                "luxury": _optional_int(kv.get("luxury")),
-                "science": _optional_int(kv.get("science")),
+                # 3.2 saves store the split as rates.tax / rates.luxury / rates.science
+                "tax": _optional_int(kv.get("rates.tax", kv.get("tax"))),
+                "luxury": _optional_int(kv.get("rates.luxury", kv.get("luxury"))),
+                "science": _optional_int(kv.get("rates.science", kv.get("science"))),
             }
         if want_diplomacy:
             p["diplomacy"] = _diplomacy(kv, player_names)
