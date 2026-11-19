@@ -25,15 +25,29 @@ def test_scripted_policy(tmp_path):
     save = Path(seed_result.save_path)
     state = position(save)
 
-    # Choose a player with a city and a unit to command. "Disband Unit" is
-    # legal for any unit type, engine-reported, and save-verifiable by the
-    # unit's subsequent absence.
+    # Control first: without any policy, which units are still alive at the
+    # end? The commanded unit is chosen among them, so its absence after the
+    # disband order is caused by the order, not by the bots' own play (bot
+    # behaviour differs between server builds).
+    ctrl = branch(
+        save, root / "control", until=state.turn + 4, seeds=[5], scorelog=False
+    )[0]
+    ctrl_ids = {
+        u["id"]
+        for p in position(Path(ctrl.save_path)).players.values()
+        for u in p["units"]
+    }
+
+    # Choose a player with a city and a surviving unit to command. "Disband
+    # Unit" is legal for any unit type, engine-reported, and save-verifiable
+    # by the unit's subsequent absence.
     player = unit = city = None
     for info in state.players.values():
-        if info["is_alive"] and info["cities"] and info["units"]:
-            player, unit, city = info, info["units"][0], info["cities"][0]
+        survivors = [u for u in info["units"] if u["id"] in ctrl_ids]
+        if info["is_alive"] and info["cities"] and survivors:
+            player, unit, city = info, survivors[0], info["cities"][0]
             break
-    assert player, "no player with city + unit"
+    assert player, "no player with a city and a unit that survives the control"
 
     act_turn = state.turn + 1
     policy = ScriptedPolicy(
@@ -85,17 +99,6 @@ def test_scripted_policy(tmp_path):
         f"unit {unit['id']} still exists after Disband order"
     )
 
-    # Control: without the policy, the unit survives — the change is caused
-    # by the order, not by the passage of turns.
-    ctrl = branch(
-        save, root / "control", until=state.turn + 4, seeds=[5], scorelog=False
-    )[0]
-    ctrl_ids = {
-        u["id"]
-        for p in position(Path(ctrl.save_path)).players.values()
-        for u in p["units"]
-    }
-    assert unit["id"] in ctrl_ids, (
-        "control invalid: unit vanished even without the disband order"
-    )
+    # Control: without the policy the unit survives (chosen that way above),
+    # and the final position differs from the policy run.
     assert ctrl.save_sha256_normalized != t1.save_sha256_normalized
